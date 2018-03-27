@@ -62,24 +62,44 @@ export class ReactiveTemplate extends ReactiveClass {
 			
 			if (node.nodeValue !== text)
 				node.nodeValue = text;
-		} else if (node.nodeType === 1) {
-			for (let attr of [...node.attributes].filter(attr => attr.name.startsWith('@'))) {
-				node.addEventListener(attr.name.substr(1), () => {
-					let code = [];
-					let tmpVarName = 'templateDataCollection';
-					code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
-					code.push('/* START EVENT HANDLER */');
-					code.push(attr.value);
-					code.push('/* END EVENT HANDLER */');
-					code.push(`return {${Object.keys(this).join(',')}}`);
+		} else if (node.nodeType === 1)
+			for (let attr of node.attributes)
+				this.renderAttribute(attr, node);
+	}
 
-					let result = new Function(tmpVarName, code.join('\r\n')).call(node, this);
-				
-					for (let entry of Object.entries(result)) this[entry[0]] = entry[1];
-				});
+	execFunction(self, value) {
+		console.log('exec');
 
-				node.attributes.removeNamedItem(attr.name);
-			}
+		let code = [];
+		let tmpVarName = 'templateDataCollection';
+		code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
+		code.push('/*-*/');
+		code.push('const execFunctionResult = ' + new Function('return ' + value).toString() + '.call(this);');
+		code.push('/*-*/');
+		code.push(`return {execFunctionResult, vars: {${Object.keys(this).join(',')}}}`);
+
+		let func = new Function(tmpVarName, code.join('\r\n'));
+		console.debug(func);
+		let result = func.call(self, this);
+		
+		for (let entry of Object.entries(result.vars)) this[entry[0]] = entry[1];
+		return result.execFunctionResult;
+	}
+
+	renderAttribute(attr, node) {
+		if (attr.name.startsWith('@')) {
+			node.addEventListener(attr.name.substr(1), () => this.execFunction(node, attr.value));
+
+			node.attributes.removeNamedItem(attr.name);
+		} else if (attr.name.startsWith(':')) {
+			console.log(attr);
+			let name = attr.name.substr(1);
+			let value = this.execFunction(node, attr.value);
+
+			if(['value', 'checked'].includes(name))
+				node[name] = value;
+			else
+				node.setAttribute(name, value);
 		}
 	}
 

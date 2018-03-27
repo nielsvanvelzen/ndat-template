@@ -12,12 +12,13 @@ window.addEventListener('load', () => {
 		hello: 'world',
 		date: new Date()
 	};
+	t.color = 'red';
 
 	t.function_test = () => new Date();
 });
 </script>
 <body>
-<!-- comment -->
+	<!-- comment -->
 	<h1>Welcome to {{ title }}</h1>
 	<a @click="title = 'apple'">apple</a>
 	<a @click="title = 'pear'">pear</a>
@@ -28,7 +29,9 @@ window.addEventListener('load', () => {
 	<hr />
 
 	<h1>{{ input }}</h1>
-	<input @keyup="input = this.value" @change="input = this.value" value="{{ input }}" autofocus="autofocus" />
+	<input @keyup="input = this.value" @change="input = this.value" :value="input" autofocus="autofocus" />
+	<a @click="input = 'f'">respect</a>
+	<a @click="input = ''">clear</a>
 	<hr />
 
 	<span>{{ function_test | exec }}</span>
@@ -45,4 +48,9 @@ window.addEventListener('load', () => {
 		<div>middle: {{title}}</div>
 		after: {{title}}
 	</div>
+
+	<label :style="'color: ' + color">
+		<input type="color" @change="color = this.value" />
+		{{color}}
+	</label>
 </body>
