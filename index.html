@@ -1,21 +1,23 @@
 <script type="module">
 import { ReactiveTemplate } from './ReactiveTemplate.js';
 
-window.addEventListener('load', () => {
-	let t = new ReactiveTemplate(document.body);
-	t.filter('json', JSON.stringify);
-	t.filter('exec', val => typeof val === 'function' ? val() : val);
+class Index extends ReactiveTemplate {
+	constructor() {
+		super(document.body);
 
-	t.title = 'my website';
-	t.input = 'model';
-	t.obj = {
-		hello: 'world',
-		date: new Date()
-	};
-	t.color = 'red';
+		this.filter('json', JSON.stringify);
+		this.filter('exec', val => typeof val === 'function' ? val() : val);
 
-	t.function_test = () => new Date();
-});
+		this.title = 'Project Demo';
+		this.input = 'Input model';
+
+		this.obj = { hello: 'world', json: 'stringify' };
+		this.color = '#000000';
+		this.function_test = () => `Call function on render (${Date.now()})`;
+	}
+}
+
+window.addEventListener('load', new Index());
 </script>
 <body>
 	<!-- comment -->

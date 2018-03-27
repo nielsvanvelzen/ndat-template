@@ -39,8 +39,6 @@ export class ReactiveTemplate extends ReactiveClass {
 	}
 
 	renderElement(node) {
-		for (let child of node.childNodes) this.renderElement(child);	
-
 		if (node.nodeType === 3) {
 			if (node.nodeValue.trim().length > 0 && node.parentNode.childNodes.length > 1) {
 				let span = document.createElement('span');
@@ -48,42 +46,25 @@ export class ReactiveTemplate extends ReactiveClass {
 				span.style.display = 'contents';
 				node.parentNode.replaceChild(span, node);
 				this.renderElement(span);
-				return;
+			} else {
+				let element = node.parentElement;
+
+				if (!this._templateMap.has(node))
+					this._templateMap.set(node, node.nodeValue);
+			
+				let text = this._templateMap.get(node).replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop));
+			
+				if (text.length === 0) text = ' ';
+			
+				if (node.nodeValue !== text)
+					node.nodeValue = text;
 			}
+		} else if (node.nodeType === 1) {
+			for (let i = node.attributes.length - 1; i >= 0; i--)
+				this.renderAttribute(node.attributes[i], node);
+		}
 
-			let element = node.parentElement;
-
-			if (!this._templateMap.has(node))
-				this._templateMap.set(node, node.nodeValue);
-			
-			let text = this._templateMap.get(node).replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop));
-			
-			if (text.length === 0) text = ' ';
-			
-			if (node.nodeValue !== text)
-				node.nodeValue = text;
-		} else if (node.nodeType === 1)
-			for (let attr of node.attributes)
-				this.renderAttribute(attr, node);
-	}
-
-	execFunction(self, value) {
-		console.log('exec');
-
-		let code = [];
-		let tmpVarName = 'templateDataCollection';
-		code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
-		code.push('/*-*/');
-		code.push('const execFunctionResult = ' + new Function('return ' + value).toString() + '.call(this);');
-		code.push('/*-*/');
-		code.push(`return {execFunctionResult, vars: {${Object.keys(this).join(',')}}}`);
-
-		let func = new Function(tmpVarName, code.join('\r\n'));
-		console.debug(func);
-		let result = func.call(self, this);
-		
-		for (let entry of Object.entries(result.vars)) this[entry[0]] = entry[1];
-		return result.execFunctionResult;
+		for (let child of node.childNodes) this.renderElement(child);
 	}
 
 	renderAttribute(attr, node) {
@@ -92,14 +73,11 @@ export class ReactiveTemplate extends ReactiveClass {
 
 			node.attributes.removeNamedItem(attr.name);
 		} else if (attr.name.startsWith(':')) {
-			console.log(attr);
 			let name = attr.name.substr(1);
 			let value = this.execFunction(node, attr.value);
 
-			if(['value', 'checked'].includes(name))
-				node[name] = value;
-			else
-				node.setAttribute(name, value);
+			if(['value', 'checked'].includes(name)) node[name] = value;
+			else node.setAttribute(name, value);
 		}
 	}
 
@@ -116,6 +94,22 @@ export class ReactiveTemplate extends ReactiveClass {
 			if (filter in this._filters) value = this._filters[filter](value);
 
 		return this.encodeHTML(value);
+	}
+
+	execFunction(self, value) {
+		let code = [];
+		let tmpVarName = 'templateDataCollection';
+		code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
+		code.push('/*-*/');
+		code.push('const execFunctionResult = ' + new Function('return ' + value).toString() + '.call(this);');
+		code.push('/*-*/');
+		code.push(`return {execFunctionResult, vars: {${Object.keys(this).join(',')}}}`);
+
+		let func = new Function(tmpVarName, code.join('\r\n'));
+		let result = func.call(self, this);
+		
+		for (let entry of Object.entries(result.vars)) this[entry[0]] = entry[1];
+		return result.execFunctionResult;
 	}
 
 	encodeHTML(html) {
