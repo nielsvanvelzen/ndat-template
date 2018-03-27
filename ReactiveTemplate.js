@@ -56,17 +56,10 @@ export class ReactiveTemplate extends ReactiveClass {
 			node.parentNode.replaceChild(span, node);
 			this.renderElement(span);
 		} else {
-			let element = node.parentElement;
-
-			if (!this._templateMap.has(node))
-				this._templateMap.set(node, node.nodeValue);
-		
+			if (!this._templateMap.has(node)) this._templateMap.set(node, node.nodeValue);
+			
 			let text = this._templateMap.get(node).replace(/{{([\w\W]*)}}/g, (match, prop) => this.execFunction(this, prop));
-		
-			if (text.length === 0) text = ' ';
-		
-			if (node.nodeValue !== text)
-				node.nodeValue = text;
+			if (node.nodeValue !== text) node.nodeValue = text;
 		}
 	}
 
