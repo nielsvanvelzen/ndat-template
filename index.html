@@ -1,0 +1,47 @@
+<script type="module">
+import { ReactiveTemplate } from './ReactiveTemplate.js';
+
+window.addEventListener('load', () => {
+	let t = new ReactiveTemplate(document.body);
+	t.filter('json', JSON.stringify);
+	t.filter('exec', val => typeof val === 'function' ? val() : val);
+
+	t.title = 'my website';
+	t.input = 'model';
+	t.obj = {
+		hello: 'world',
+		date: new Date()
+	};
+
+	t.function_test = () => new Date();
+});
+</script>
+<body>
+	<h1>Welcome to {{ title }}</h1>
+	<a @click="title = 'apple'">apple</a>
+	<a @click="title = 'pear'">pear</a>
+	<a @click="title = 'banana'">banana</a>
+	<hr />
+
+	<pre>{{ obj | json }}</pre>
+	<hr />
+
+	<h1>{{ input }}</h1>
+	<input @change="input = this.value" value="{{ input }}" autofocus="autofocus" />
+	<hr />
+
+	<span>{{ function_test | exec }}</span>
+	<hr />
+
+	<span>{{ unknown_property }} is invisible</span>
+	<hr />
+
+	<div @click="title = 'test'">Test</div>
+	<hr />
+
+	<div class="nested but content">
+		{{title}}
+		<div>{{title}}</div>
+		{{title}}
+	</div>
+</body>
