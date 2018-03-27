@@ -5,9 +5,6 @@ class Index extends ReactiveTemplate {
 	constructor() {
 		super(document.body);
 
-		this.filter('json', JSON.stringify);
-		this.filter('exec', val => typeof val === 'function' ? val() : val);
-
 		this.title = 'Project Demo';
 		this.input = 'Input model';
 
@@ -27,7 +24,7 @@ window.addEventListener('load', new Index());
 	<a @click="title = 'banana'">banana</a>
 	<hr />
 
-	<pre>{{ obj | json }}</pre>
+	<pre>{{ JSON.stringify(obj) }}</pre>
 	<hr />
 
 	<h1>{{ input }}</h1>
@@ -36,10 +33,7 @@ window.addEventListener('load', new Index());
 	<a @click="input = ''">clear</a>
 	<hr />
 
-	<span>{{ function_test | exec }}</span>
-	<hr />
-
-	<span>{{ unknown_property }} is invisible</span>
+	<span>{{ function_test() }}</span>
 	<hr />
 
 	<div @click="title = 'test'">Test</div>
@@ -55,4 +49,9 @@ window.addEventListener('load', new Index());
 		<input type="color" @change="color = this.value" />
 		{{color}}
 	</label>
+	<hr />
+
+	<!--ul>
+		<li v-for="item of [1, 2, 3]">{{ item }}</li>
+	</ul-->
 </body>

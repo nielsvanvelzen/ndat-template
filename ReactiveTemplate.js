@@ -6,7 +6,6 @@ export class ReactiveTemplate extends ReactiveClass {
 
 		this._el = el;
 		this._tpl = el.innerHTML;
-		this._filters = {};
 		this._changes = [];
 		this._renderRequested = false;
 		this._templateMap = new Map();
@@ -40,31 +39,35 @@ export class ReactiveTemplate extends ReactiveClass {
 
 	renderElement(node) {
 		if (node.nodeType === 3) {
-			if (node.nodeValue.trim().length > 0 && node.parentNode.childNodes.length > 1) {
-				let span = document.createElement('span');
-				span.textContent = node.nodeValue;
-				span.style.display = 'contents';
-				node.parentNode.replaceChild(span, node);
-				this.renderElement(span);
-			} else {
-				let element = node.parentElement;
-
-				if (!this._templateMap.has(node))
-					this._templateMap.set(node, node.nodeValue);
-			
-				let text = this._templateMap.get(node).replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop));
-			
-				if (text.length === 0) text = ' ';
-			
-				if (node.nodeValue !== text)
-					node.nodeValue = text;
-			}
+			this.renderText(node);
 		} else if (node.nodeType === 1) {
 			for (let i = node.attributes.length - 1; i >= 0; i--)
 				this.renderAttribute(node.attributes[i], node);
 		}
 
 		for (let child of node.childNodes) this.renderElement(child);
+	}
+
+	renderText(node) {
+		if (node.nodeValue.trim().length > 0 && node.parentNode.childNodes.length > 1) {
+			let span = document.createElement('span');
+			span.textContent = node.nodeValue;
+			span.style.display = 'contents';
+			node.parentNode.replaceChild(span, node);
+			this.renderElement(span);
+		} else {
+			let element = node.parentElement;
+
+			if (!this._templateMap.has(node))
+				this._templateMap.set(node, node.nodeValue);
+		
+			let text = this._templateMap.get(node).replace(/{{([\w\W]*)}}/g, (match, prop) => this.execFunction(this, prop));
+		
+			if (text.length === 0) text = ' ';
+		
+			if (node.nodeValue !== text)
+				node.nodeValue = text;
+		}
 	}
 
 	renderAttribute(attr, node) {
@@ -81,44 +84,30 @@ export class ReactiveTemplate extends ReactiveClass {
 		}
 	}
 
-	parseProp(raw) {
-		let prop = raw;
-		let filters = [];
-
-		if (raw.includes('|')) [prop, ...filters] = raw.split('|').map(p => p.trim());
-
-		let value = prop;
-		value = this[prop.trim()];
-
-		for (let filter of filters)
-			if (filter in this._filters) value = this._filters[filter](value);
-
-		return this.encodeHTML(value);
-	}
-
 	execFunction(self, value) {
-		let code = [];
-		let tmpVarName = 'templateDataCollection';
-		code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
-		code.push('/*-*/');
-		code.push('const execFunctionResult = ' + new Function('return ' + value).toString() + '.call(this);');
-		code.push('/*-*/');
-		code.push(`return {execFunctionResult, vars: {${Object.keys(this).join(',')}}}`);
+		try {
+			let code = [];
+			let tmpVarName = 'templateDataCollection';
+			code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
+			code.push('/*-*/');
+			code.push('const execFunctionResult = ' + new Function('return ' + value).toString() + '.call(this);');
+			code.push('/*-*/');
+			code.push(`return {execFunctionResult, vars: {${Object.keys(this).join(',')}}}`);
 
-		let func = new Function(tmpVarName, code.join('\r\n'));
-		let result = func.call(self, this);
+			let func = new Function(tmpVarName, code.join('\r\n'));
+			let result = func.call(self, this);
 		
-		for (let entry of Object.entries(result.vars)) this[entry[0]] = entry[1];
-		return result.execFunctionResult;
+			for (let entry of Object.entries(result.vars)) this[entry[0]] = entry[1];
+			return result.execFunctionResult;
+		} catch (err) {
+			console.error(err);
+			return;
+		}
 	}
 
 	encodeHTML(html) {
 		let el = document.createElement('div');
 		el.textContent = html;
 		return el.innerHTML;
-	}
-
-	filter(name, func) {
-		this._filters[name] = func;
 	}
 }
