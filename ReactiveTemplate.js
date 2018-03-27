@@ -9,6 +9,7 @@ export class ReactiveTemplate extends ReactiveClass {
 		this._filters = {};
 		this._changes = [];
 		this._renderRequested = false;
+		this._templateMap = new Map();
 
 		this.observe(prop => {
 			this._changes.push(prop);
@@ -25,33 +26,61 @@ export class ReactiveTemplate extends ReactiveClass {
 	}
 
 	render() {
-		this._el.innerHTML = this._tpl;
-		for (let el of [this._el, ...this._el.querySelectorAll('*')])
-			this.renderElement(el);
+		if (this._el.dataset.compiled !== 'true') {
+			this._el.innerHTML = this._tpl;
+			this._el.dataset.compiled = true;
+		}
+
+		this.renderElement(this._el);
+
+		//for (let el of [this._el, ...this._el.querySelectorAll('*')])
+		//	this.renderElement(el);
 
 		this._changes = [];
 		this._renderRequested = false;
 	}
 
-	renderElement(el) {
-		console.log(el);
-		el.innerHTML = el.innerHTML.replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop));
+	renderElement(node) {
+		for (let child of node.childNodes) this.renderElement(child);	
 
-		for (let attr of el.attributes) if (attr.name.startsWith('@')) {
-			el.addEventListener(attr.name.substr(1), () => {
-				let code = [];
-				let tmpVarName = 'templateDataCollection';
-				code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
-				code.push('/* START EVENT HANDLER */');
-				code.push(attr.value);
-				code.push('/* END EVENT HANDLER */');
-				code.push(`return {${Object.keys(this).join(',')}}`);
+		if (node.nodeType === 3) {
+			if (node.nodeValue.trim().length === 0) return;
 
-				let result = new Function(tmpVarName, code.join('\r\n')).call(el, this);
+			if (node.parentNode.childNodes.length > 1) {
+				let span = document.createElement('span');
+				span.textContent = node.nodeValue;
+				span.style.display = 'contents';
+				node.parentNode.replaceChild(span, node);
+				this.renderElement(span);
+				return;
+			}
+
+			let element = node.parentElement;
+
+			if (!this._templateMap.has(node))
+				this._templateMap.set(node, node.nodeValue);
+			
+			let text = this._templateMap.get(node).replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop))
+
+			if (node.nodeValue !== text) node.nodeValue = text;
+		} else if (node.nodeType === 1) {
+			for (let attr of [...node.attributes].filter(attr => attr.name.startsWith('@'))) {
+				node.addEventListener(attr.name.substr(1), () => {
+					let code = [];
+					let tmpVarName = 'templateDataCollection';
+					code.push(`let {${Object.keys(this).join(',')}} = ${tmpVarName};`);
+					code.push('/* START EVENT HANDLER */');
+					code.push(attr.value);
+					code.push('/* END EVENT HANDLER */');
+					code.push(`return {${Object.keys(this).join(',')}}`);
+
+					let result = new Function(tmpVarName, code.join('\r\n')).call(node, this);
 				
-				for (let entry of Object.entries(result)) this[entry[0]] = entry[1];
-			});
-			el.attributes.removeNamedItem(attr.name);
+					for (let entry of Object.entries(result)) this[entry[0]] = entry[1];
+				});
+
+				node.attributes.removeNamedItem(attr.name);
+			}
 		}
 	}
 

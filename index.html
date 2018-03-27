@@ -27,7 +27,7 @@ window.addEventListener('load', () => {
 	<hr />
 
 	<h1>{{ input }}</h1>
-	<input @change="input = this.value" value="{{ input }}" autofocus="autofocus" />
+	<input @keyup="input = this.value" @change="input = this.value" value="{{ input }}" autofocus="autofocus" />
 	<hr />
 
 	<span>{{ function_test | exec }}</span>
@@ -40,8 +40,8 @@ window.addEventListener('load', () => {
 	<hr />
 
 	<div class="nested but content">
-		{{title}}
-		<div>{{title}}</div>
-		{{title}}
+		Before: {{title}}
+		<div>middle: {{title}}</div>
+		after: {{title}}
 	</div>
 </body>
