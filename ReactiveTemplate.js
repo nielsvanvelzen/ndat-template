@@ -29,12 +29,10 @@ export class ReactiveTemplate extends ReactiveClass {
 		if (this._el.dataset.compiled !== 'true') {
 			this._el.innerHTML = this._tpl;
 			this._el.dataset.compiled = true;
+			this._el.normalize();
 		}
 
 		this.renderElement(this._el);
-
-		//for (let el of [this._el, ...this._el.querySelectorAll('*')])
-		//	this.renderElement(el);
 
 		this._changes = [];
 		this._renderRequested = false;
@@ -44,9 +42,7 @@ export class ReactiveTemplate extends ReactiveClass {
 		for (let child of node.childNodes) this.renderElement(child);	
 
 		if (node.nodeType === 3) {
-			if (node.nodeValue.trim().length === 0) return;
-
-			if (node.parentNode.childNodes.length > 1) {
+			if (node.nodeValue.trim().length > 0 && node.parentNode.childNodes.length > 1) {
 				let span = document.createElement('span');
 				span.textContent = node.nodeValue;
 				span.style.display = 'contents';
@@ -60,9 +56,12 @@ export class ReactiveTemplate extends ReactiveClass {
 			if (!this._templateMap.has(node))
 				this._templateMap.set(node, node.nodeValue);
 			
-			let text = this._templateMap.get(node).replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop))
-
-			if (node.nodeValue !== text) node.nodeValue = text;
+			let text = this._templateMap.get(node).replace(/{{([ _a-zA-Z0-9\|]*)}}/g, (match, prop) => this.parseProp(prop));
+			
+			if (text.length === 0) text = ' ';
+			
+			if (node.nodeValue !== text)
+				node.nodeValue = text;
 		} else if (node.nodeType === 1) {
 			for (let attr of [...node.attributes].filter(attr => attr.name.startsWith('@'))) {
 				node.addEventListener(attr.name.substr(1), () => {
