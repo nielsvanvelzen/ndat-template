@@ -10,6 +10,8 @@ class Index extends ReactiveTemplate {
 
 		this.obj = { hello: 'world', json: 'stringify' };
 		this.color = '#000000';
+		this.array = ['apple', 'pear', 'banana'];
+
 		this.function_test = () => `Call function on render (${Date.now()})`;
 	}
 }
@@ -51,7 +53,14 @@ window.addEventListener('load', new Index());
 	</label>
 	<hr />
 
-	<!--ul>
+	<ul>
 		<li v-for="item of [1, 2, 3]">{{ item }}</li>
-	</ul-->
+	</ul>
+
+	<ul>
+		<li v-for="item of array" @click="title = item">{{ item }}</li>
+	</ul>
+	<a @click="array.push(Date.now())">Add</a>
+
+	{{array}}
 </body>
