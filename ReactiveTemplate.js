@@ -35,7 +35,7 @@ export class ReactiveTemplate extends ReactiveClass {
 
 	renderElement(node, context) {
 		if (node.dataset && node.dataset.skip === 'true') return;
-
+		
 		if (node.nodeType === 3) {
 			this.renderText(node, context);
 		} else if (node.nodeType === 1) {
@@ -87,17 +87,30 @@ export class ReactiveTemplate extends ReactiveClass {
 			
 			this._forChilds.set(node, []);
 
+			let index = 0;
 			for (let item of expression) {
-				let child = tpl.cloneNode(true);
-				child.attributes.removeNamedItem(attr.name);
-				node.parentNode.insertBefore(child, node);
+				let keyExpression = tpl.getAttribute(':key') || null;
+				keyExpression = this.execFunction(node, keyExpression, {...context, [left]: item, index});
 
-				this.renderElement(child, {...context, [left]: item});
+				let child = node.parentNode.querySelector('[key="' + keyExpression + '"]');
 
-				this._forChilds.get(node).push(child);
+				if (!child) {
+					child = tpl.cloneNode(true);
+					child.attributes.removeNamedItem(attr.name);
+					node.parentNode.insertBefore(child, node);
+					this._forChilds.get(node).push(child);
+				}
+
+				
+				child.dataset.skip = 'false';
+				this.renderElement(child, { ...context, [left]: item, index });
+				child.dataset.skip = 'true';
+
+				index++;
 			}
 
 			node.dataset.skipChilds = 'true';
+			node.hidden = true;
 		}
 	}
 
