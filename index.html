@@ -58,7 +58,7 @@ window.addEventListener('load', new Index());
 	</ul>
 
 	<ul>
-		<li v-for="item of array" @click="title = item" :key="item">{{ item }}</li>
+		<li v-for="item of array" @click="context.title = item" :key="item"><button>{{ item }}</button></li>
 	</ul>
 	<a @click="array.push(Date.now())">Add</a>
 

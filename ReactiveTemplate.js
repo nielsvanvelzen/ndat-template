@@ -66,6 +66,8 @@ export class ReactiveTemplate extends ReactiveClass {
 
 	renderAttribute(attr, node, context) {
 		if (attr.name.startsWith('@')) {
+			if (node.getAttribute('v-for')) return;
+
 			node.addEventListener(attr.name.substr(1), () => this.execFunction(node, attr.value, context));
 
 			node.attributes.removeNamedItem(attr.name);
@@ -89,8 +91,9 @@ export class ReactiveTemplate extends ReactiveClass {
 
 			let index = 0;
 			for (let item of expression) {
+				let funcContext = { context, [left]: item, index };
 				let keyExpression = tpl.getAttribute(':key') || null;
-				keyExpression = this.execFunction(node, keyExpression, {...context, [left]: item, index});
+				keyExpression = this.execFunction(node, keyExpression, funcContext);
 
 				let child = node.parentNode.querySelector('[key="' + keyExpression + '"]');
 
@@ -103,7 +106,7 @@ export class ReactiveTemplate extends ReactiveClass {
 
 				
 				child.dataset.skip = 'false';
-				this.renderElement(child, { ...context, [left]: item, index });
+				this.renderElement(child, funcContext);
 				child.dataset.skip = 'true';
 
 				index++;
