@@ -1,0 +1,8 @@
+{
+	"name": "ndat-template",
+	"version": "0.0.1-SNAPSHOT",
+	"description": "Template library",
+	"repository": "git@github.com:nielsvanvelzen/ndat-template.git",
+	"author": "Niels van Velzen <git@ndat.nl>",
+	"private": false
+}
