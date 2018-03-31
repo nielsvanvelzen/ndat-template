@@ -1,5 +1,6 @@
 <script type="module">
 import { ReactiveTemplate } from './src/ReactiveTemplate.js';
+import { TemplateCompiler } from './src/TemplateCompiler.js';
 
 class Index extends ReactiveTemplate {
 	constructor() {
@@ -16,7 +17,8 @@ class Index extends ReactiveTemplate {
 	}
 }
 
-window.addEventListener('load', new Index());
+//window.addEventListener('load', new Index());
+window.addEventListener('load', () => new TemplateCompiler().compile(document.body).mount(document.body));
 </script>
 <body>
 	<!-- comment -->
@@ -63,4 +65,15 @@ window.addEventListener('load', new Index());
 	<a @click="array.push(Date.now())">Add</a>
 
 	{{array}}
+
+<!-- A -->
+	<ul>
+		<v:for key="item" :source="[1, 2, 3]">
+			<li>{{ item }}</li>
+		</v:for>
+	</ul>
+<!-- B -->
+	<ul>
+		<li v-for="item of [1, 2, 3]">{{ item }}</li>
+	</ul>
 </body>
